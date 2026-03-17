@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Search, Globe, Shield, Zap, BarChart3, TrendingUp, CheckCircle2, XCircle, ChevronLeft, LayoutDashboard, Share2, Download, Bot, BrainCircuit, MessageSquareText, FileJson, Info, ExternalLink, Plus, Trash2, Calendar, Users, MousePointer2, Key } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
@@ -8,12 +8,16 @@ import {
   PieChart, Pie, Cell, Tooltip as RechartsTooltip
 } from 'recharts';
 import { analyzeSEO, SEOResult } from "@/lib/seo-analyzer";
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
 
 export default function Home() {
   const [url, setUrl] = useState("");
   const [competitors, setCompetitors] = useState<string[]>([""]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [result, setResult] = useState<SEOResult | null>(null);
+  const [isDownloading, setIsDownloading] = useState(false);
+  const reportRef = useRef<HTMLDivElement>(null);
 
   const handleAddCompetitor = () => {
     if (competitors.length < 3) {
@@ -45,6 +49,39 @@ export default function Home() {
       console.error("Analysis failed", error);
     } finally {
       setIsAnalyzing(false);
+    }
+  };
+
+  const downloadPDF = async () => {
+    if (!reportRef.current) return;
+    setIsDownloading(true);
+    
+    try {
+      const canvas = await html2canvas(reportRef.current, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: "#f8fafc", // slate-50
+        windowWidth: reportRef.current.scrollWidth,
+        windowHeight: reportRef.current.scrollHeight
+      });
+      
+      const imgData = canvas.toDataURL("image/png");
+      const pdf = new jsPDF({
+        orientation: "portrait",
+        unit: "px",
+        format: [canvas.width / 2, canvas.height / 2]
+      });
+      
+      const imgWidth = canvas.width / 2;
+      const imgHeight = canvas.height / 2;
+      
+      pdf.addImage(imgData, "PNG", 0, 0, imgWidth, imgHeight);
+      pdf.save(`SEO-Report-${url.replace(/^https?:\/\//, "").replace(/[\/.]/g, "-")}.pdf`);
+    } catch (error) {
+      console.error("PDF export failed", error);
+    } finally {
+      setIsDownloading(false);
     }
   };
 
@@ -81,16 +118,11 @@ export default function Home() {
         <div className="container mx-auto flex h-16 items-center justify-between px-4">
           <div className="flex items-center gap-2 font-bold text-indigo-600">
             <LayoutDashboard className="h-6 w-6" />
-            <span>SEO Pro</span>
+            <span>SEO & GEO Pro by PHL</span>
           </div>
-          <div className="hidden items-center gap-6 text-sm font-medium text-slate-600 sm:flex">
-            <a href="#" className="hover:text-indigo-600 transition-colors">Công cụ</a>
-            <a href="#" className="hover:text-indigo-600 transition-colors">Giá cả</a>
-            <a href="#" className="hover:text-indigo-600 transition-colors">Tài liệu</a>
+          <div className="flex items-center gap-4">
+            <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Version 2026.1</span>
           </div>
-          <button className="rounded-full bg-slate-900 px-5 py-2 text-sm font-semibold text-white hover:bg-slate-800 transition-all active:scale-95">
-            Đăng nhập
-          </button>
         </div>
       </nav>
 
@@ -111,7 +143,7 @@ export default function Home() {
                 <span className="text-indigo-600">cho Google & AI</span>
               </h1>
               <p className="mt-8 text-lg leading-8 text-slate-600 max-w-2xl mx-auto">
-                Kiểm tra SEO truyền thống và tối ưu hóa khả năng hiển thị trên AI Search (GEO) so với đối thủ cạnh tranh.
+                Kiểm tra SEO truyền thống và tối ưu hóa khả năng hiển thị trên AI Search (GEO) dựa trên các tiêu chuẩn quốc tế mới nhất 2026.
               </p>
             </motion.div>
             
@@ -122,7 +154,6 @@ export default function Home() {
               onSubmit={handleAnalyze}
               className="mt-12 mx-auto max-w-3xl space-y-6"
             >
-              {/* Main URL Input */}
               <div className="space-y-2 text-left">
                 <label className="text-sm font-bold text-slate-700 ml-2 uppercase tracking-wider">Website của bạn</label>
                 <div className="relative">
@@ -140,7 +171,6 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* Competitor Inputs */}
               <div className="space-y-4 text-left">
                 <div className="flex items-center justify-between px-2">
                   <label className="text-sm font-bold text-slate-700 uppercase tracking-wider">Đối thủ cạnh tranh (Tối đa 3)</label>
@@ -230,14 +260,41 @@ export default function Home() {
                 <button className="flex items-center gap-2 rounded-lg bg-white px-4 py-2 text-sm font-bold text-slate-700 shadow-sm ring-1 ring-slate-200 hover:bg-slate-50">
                   <Share2 className="h-4 w-4" /> Chia sẻ
                 </button>
-                <button className="flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-bold text-white shadow-md hover:bg-indigo-500">
-                  <Download className="h-4 w-4" /> Tải báo cáo PDF
+                <button 
+                  onClick={downloadPDF}
+                  disabled={isDownloading}
+                  className="flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-bold text-white shadow-md hover:bg-indigo-500 disabled:opacity-70"
+                >
+                  {isDownloading ? (
+                    <>
+                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                      Đang tạo...
+                    </>
+                  ) : (
+                    <>
+                      <Download className="h-4 w-4" /> Tải báo cáo PDF
+                    </>
+                  )}
                 </button>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 gap-8 lg:grid-cols-12">
-              {/* Left Column: Summary & Basic Stats */}
+            <div ref={reportRef} className="bg-slate-50 p-8 rounded-3xl">
+              {/* Report Header (Visible in PDF) */}
+              <div className="mb-8 flex items-center justify-between border-b border-slate-200 pb-6">
+                <div className="flex items-center gap-2 font-bold text-indigo-600">
+                  <LayoutDashboard className="h-8 w-8" />
+                  <span className="text-2xl">SEO & GEO Pro by PHL</span>
+                </div>
+                <div className="text-right">
+                  <p className="text-sm font-bold text-slate-900">Báo cáo phân tích Website</p>
+                  <p className="text-xs text-slate-500">{url}</p>
+                  <p className="text-[10px] text-slate-400 mt-1">Ngày xuất: {new Date().toLocaleDateString('vi-VN')}</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-8 lg:grid-cols-12">
+                {/* Left Column: Summary & Basic Stats */}
               <div className="lg:col-span-4 space-y-6">
                 <div className="rounded-3xl bg-white p-8 shadow-xl ring-1 ring-slate-100 flex flex-col items-center text-center">
                   <h3 className="text-xl font-bold text-slate-900 mb-8">Tổng quan hiệu quả</h3>
@@ -250,7 +307,6 @@ export default function Home() {
                     </div>
                   </div>
                   
-                  {/* Radar Chart for SEO & AI Mix */}
                   <div className="mt-8 h-64 w-full">
                     <ResponsiveContainer width="100%" height="100%">
                       <RadarChart cx="50%" cy="50%" outerRadius="80%" data={radarData}>
@@ -268,7 +324,6 @@ export default function Home() {
                   </div>
                 </div>
 
-                {/* Website Basic Stats Card */}
                 <div className="rounded-3xl bg-white p-8 shadow-xl ring-1 ring-slate-100">
                   <h4 className="text-lg font-bold mb-6 flex items-center gap-2 text-slate-900">
                     <Info className="h-5 w-5 text-indigo-500" /> Thông số cơ bản
@@ -327,7 +382,6 @@ export default function Home() {
                   </div>
                 </div>
 
-                {/* Criteria Sources Card */}
                 <div className="rounded-3xl bg-slate-900 p-8 shadow-xl text-white">
                   <h4 className="text-lg font-bold mb-6 flex items-center gap-2 text-indigo-400">
                     <Shield className="h-5 w-5" /> Nguồn tiêu chí đánh giá
@@ -417,7 +471,6 @@ export default function Home() {
                   </div>
                 </div>
 
-                {/* Keywords Analysis Card */}
                 <div className="rounded-3xl bg-white p-8 shadow-xl ring-1 ring-slate-100">
                   <div className="flex items-center justify-between mb-8">
                     <div>
@@ -453,7 +506,6 @@ export default function Home() {
                   </div>
                 </div>
 
-                {/* Standard SEO Metrics */}
                 <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
                   {Object.entries(result.metrics).map(([key, item]) => (
                     <motion.div 
@@ -487,7 +539,6 @@ export default function Home() {
                   ))}
                 </div>
 
-                {/* SWOT Analysis */}
                 <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                   <div className="rounded-2xl border border-green-100 bg-green-50/30 p-8">
                     <h4 className="flex items-center gap-2 text-lg font-bold text-green-800 mb-6">
@@ -517,8 +568,7 @@ export default function Home() {
                   </div>
                 </div>
 
-                {/* Competitor Analysis Table */}
-                <div className="rounded-2xl bg-white p-8 shadow-xl ring-1 ring-slate-100">
+                <div className="rounded-3xl bg-white p-8 shadow-xl ring-1 ring-slate-100">
                   <div className="flex items-center justify-between mb-8">
                     <div>
                       <h4 className="text-xl font-bold text-slate-900">So sánh đối thủ thực tế</h4>
@@ -561,7 +611,8 @@ export default function Home() {
                 </div>
               </div>
             </div>
-          </motion.div>
+          </div>
+        </motion.div>
         )}
       </AnimatePresence>
 
@@ -570,9 +621,9 @@ export default function Home() {
         <div className="container mx-auto px-4 text-center">
           <div className="flex items-center justify-center gap-2 font-bold text-indigo-600 mb-4">
             <LayoutDashboard className="h-6 w-6" />
-            <span>SEO Pro</span>
+            <span>SEO & GEO Pro by PHL</span>
           </div>
-          <p className="text-slate-500 text-sm">© 2024 SEO Pro Analyzer. Dựa trên các tiêu chuẩn quốc tế.</p>
+          <p className="text-slate-500 text-sm">© 2026 SEO & GEO Pro by PHL. Đã đăng ký bản quyền.</p>
         </div>
       </footer>
     </main>
