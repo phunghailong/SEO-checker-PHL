@@ -18,6 +18,35 @@ export interface TrafficSource {
   color: string;
 }
 
+export interface EntityInsight {
+  name: string;
+  type: string;
+  relevance: number;
+}
+
+export interface EEATMetric {
+  expertise: number;
+  experience: number;
+  authoritativeness: number;
+  trustworthiness: number;
+  overallScore: number;
+}
+
+export interface VoiceSearchMetric {
+  score: number;
+  readabilityLevel: string;
+  questionCoverage: number;
+  conversationalTone: number;
+}
+
+export interface OptimizationRecommendation {
+  title: string;
+  description: string;
+  category: "SEO" | "GEO" | "EEAT" | "VOICE";
+  priority: "High" | "Medium" | "Low";
+  impact: string;
+}
+
 export interface SEOResult {
   score: number;
   metrics: {
@@ -43,7 +72,11 @@ export interface SEOResult {
     citationProbability: number;
     aiRecommendations: string[];
     sources: string[];
+    entities: EntityInsight[];
   };
+  eeat: EEATMetric;
+  voiceSearch: VoiceSearchMetric;
+  recommendations: OptimizationRecommendation[];
 }
 
 const getHash = (str: string) => str.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
@@ -150,6 +183,85 @@ export const analyzeSEO = async (url: string, competitorUrls: string[] = []): Pr
     "Sử dụng ngôn ngữ tự nhiên, mạch lạc hơn trong các bài viết"
   ].filter((_, i) => (hash + i) % 2 !== 0).slice(0, 3);
 
+  const entities: EntityInsight[] = [
+    { name: "Brand Name", type: "Organization", relevance: 95 },
+    { name: "CEO Name", type: "Person", relevance: 88 },
+    { name: "Main Product", type: "Product", relevance: 92 },
+    { name: "Service Area", type: "Location", relevance: 75 },
+    { name: "Software Tech", type: "Technology", relevance: 82 }
+  ].filter((_, i) => (hash + i) % 2 === 0).slice(0, 4);
+
+  const eeat: EEATMetric = {
+    expertise: 65 + (hash % 30),
+    experience: 60 + (hash % 35),
+    authoritativeness: 55 + (hash % 40),
+    trustworthiness: 70 + (hash % 25),
+    overallScore: 62 + (hash % 30)
+  };
+
+  const voiceSearch: VoiceSearchMetric = {
+    score: 55 + (hash % 40),
+    readabilityLevel: (hash % 3 === 0) ? "Dễ hiểu (Lớp 6-8)" : "Trung bình (Lớp 10-12)",
+    questionCoverage: 40 + (hash % 50),
+    conversationalTone: 60 + (hash % 35)
+  };
+
+  const potentialRecommendations: OptimizationRecommendation[] = [
+    {
+      title: "Tối ưu hóa LCP (Largest Contentful Paint)",
+      description: "Hình ảnh biểu ngữ (hero image) đang tải chậm. Chuyển sang định dạng WebP và thêm thuộc tính 'fetchpriority=high'.",
+      category: "SEO",
+      priority: "High",
+      impact: "Cải thiện 15-20 điểm Performance"
+    },
+    {
+      title: "Triển khai Structured Data cho FAQ",
+      description: "Nội dung của bạn có nhiều câu hỏi nhưng chưa có Schema FAQ. Điều này ngăn cản việc xuất hiện Rich Results trên Google.",
+      category: "GEO",
+      priority: "High",
+      impact: "Tăng tỷ lệ nhấp chuột (CTR) và khả năng trích dẫn AI"
+    },
+    {
+      title: "Xây dựng Trang Tác giả (Author Bio)",
+      description: "Các bài blog thiếu thông tin tác giả cụ thể. Hãy thêm tiểu sử chuyên gia, link LinkedIn để củng cố tín hiệu Expertise.",
+      category: "EEAT",
+      priority: "Medium",
+      impact: "Tăng độ tin cậy trong mắt Google Raters"
+    },
+    {
+      title: "Tái cấu trúc câu tiêu đề thành dạng câu hỏi",
+      description: "Người dùng tìm kiếm giọng nói thường dùng câu hỏi 'Tại sao', 'Làm thế nào'. Hãy sửa các H2 để khớp với ý định này.",
+      category: "VOICE",
+      priority: "Medium",
+      impact: "Tiếp cận 30% lưu lượng từ thiết bị di động"
+    },
+    {
+      title: "Giảm thiểu CSS không sử dụng",
+      description: "Có khoảng 40kb CSS đang tải nhưng không được dùng trong trang đầu tiên. Hãy tách file CSS nhỏ hơn.",
+      category: "SEO",
+      priority: "Low",
+      impact: "Giảm thời gian tương tác (TTI)"
+    },
+    {
+      title: "Tối ưu hóa nội dung cho 'AI Citations'",
+      description: "Các đoạn văn bản quá dài. Hãy tóm tắt ý chính trong 2-3 câu ngắn ở đầu mỗi mục để AI dễ trích dẫn.",
+      category: "GEO",
+      priority: "High",
+      impact: "Ưu tiên xuất hiện trong kết quả trả về của ChatGPT/Gemini"
+    },
+    {
+      title: "Thêm chính sách biên tập (Editorial Policy)",
+      description: "Website chưa công khai quy trình kiểm duyệt nội dung. Hãy thêm trang Chính sách biên tập để tăng tính Trustworthiness.",
+      category: "EEAT",
+      priority: "High",
+      impact: "Cần thiết cho các website thuộc lĩnh vực Y tế/Tài chính (YMYL)"
+    }
+  ];
+
+  const recommendations = potentialRecommendations
+    .filter((_, i) => (hash + i) % 2 === 0)
+    .slice(0, 4);
+
   return {
     score,
     metrics,
@@ -169,7 +281,11 @@ export const analyzeSEO = async (url: string, competitorUrls: string[] = []): Pr
       contentClarity: 60 + (hash % 35),
       citationProbability: 40 + (hash % 50),
       aiRecommendations,
-      sources: ["OpenAI Guidelines", "Schema.org", "GEO Framework"]
-    }
+      sources: ["OpenAI Guidelines", "Schema.org", "GEO Framework"],
+      entities
+    },
+    eeat,
+    voiceSearch,
+    recommendations
   };
 };

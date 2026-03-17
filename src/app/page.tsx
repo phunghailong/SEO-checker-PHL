@@ -1,13 +1,13 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { Search, Globe, Shield, Zap, BarChart3, TrendingUp, CheckCircle2, XCircle, ChevronLeft, LayoutDashboard, Share2, Download, Bot, BrainCircuit, MessageSquareText, FileJson, Info, ExternalLink, Plus, Trash2, Calendar, Users, MousePointer2, Key } from "lucide-react";
+import { Search, Globe, Shield, Zap, BarChart3, TrendingUp, CheckCircle2, XCircle, ChevronLeft, LayoutDashboard, Share2, Download, Bot, BrainCircuit, MessageSquareText, FileJson, Info, ExternalLink, Plus, Trash2, Calendar, Users, MousePointer2, Key, FileSpreadsheet, Fingerprint, Award, Mic, HeartPulse, UserCheck, AlertTriangle, Lightbulb, Target } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Radar, RadarChart, PolarGrid, PolarAngleAxis, ResponsiveContainer,
   PieChart, Pie, Cell, Tooltip as RechartsTooltip
 } from 'recharts';
-import { analyzeSEO, SEOResult } from "@/lib/seo-analyzer";
+import { analyzeSEO, SEOResult, EntityInsight } from "@/lib/seo-analyzer";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 
@@ -83,6 +83,40 @@ export default function Home() {
     } finally {
       setIsDownloading(false);
     }
+  };
+
+  const downloadCSV = () => {
+    if (!result) return;
+    
+    let csv = "Category,Metric,Value,Source\n";
+    csv += `Overall,SEO Score,${result.score},SEO & GEO Pro\n`;
+    Object.entries(result.metrics).forEach(([key, m]) => {
+      csv += `Metrics,${m.label},${m.score},${m.source}\n`;
+    });
+    csv += `AI,Readiness,${result.aiOptimization.readinessScore},GEO Framework\n`;
+    csv += `AI,Structured Data,${result.aiOptimization.structuredData},Schema.org\n`;
+    csv += `AI,Robots Allowed,${result.aiOptimization.robotsAllowed},Bot Access\n`;
+    csv += `EEAT,Overall Score,${result.eeat.overallScore},Google Quality Raters\n`;
+    csv += `EEAT,Expertise,${result.eeat.expertise},Google Quality Raters\n`;
+    csv += `EEAT,Experience,${result.eeat.experience},Google Quality Raters\n`;
+    csv += `EEAT,Authoritativeness,${result.eeat.authoritativeness},Google Quality Raters\n`;
+    csv += `EEAT,Trustworthiness,${result.eeat.trustworthiness},Google Quality Raters\n`;
+    csv += `VoiceSearch,Score,${result.voiceSearch.score},Voice Search Checker\n`;
+    csv += `VoiceSearch,Readability,${result.voiceSearch.readabilityLevel},Voice Search Checker\n`;
+    
+    result.recommendations.forEach((rec, i) => {
+      csv += `Recommendation,${rec.priority} Priority,${rec.title},${rec.category}\n`;
+    });
+    
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", `SEO-Report-${result.score}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   const radarData = result ? [
@@ -257,6 +291,12 @@ export default function Home() {
                 <ChevronLeft className="h-4 w-4" /> Quay lại trang chủ
               </button>
               <div className="flex gap-3">
+                <button 
+                  onClick={downloadCSV}
+                  className="flex items-center gap-2 rounded-lg bg-white px-4 py-2 text-sm font-bold text-slate-700 shadow-sm ring-1 ring-slate-200 hover:bg-slate-50"
+                >
+                  <FileSpreadsheet className="h-4 w-4" /> CSV
+                </button>
                 <button className="flex items-center gap-2 rounded-lg bg-white px-4 py-2 text-sm font-bold text-slate-700 shadow-sm ring-1 ring-slate-200 hover:bg-slate-50">
                   <Share2 className="h-4 w-4" /> Chia sẻ
                 </button>
@@ -321,6 +361,50 @@ export default function Home() {
                         />
                       </RadarChart>
                     </ResponsiveContainer>
+                  </div>
+                </div>
+
+                {/* Optimization Roadmap Section */}
+                <div className="rounded-3xl bg-white p-8 shadow-xl ring-1 ring-slate-100">
+                  <div className="flex items-center justify-between mb-8">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 rounded-xl bg-indigo-50">
+                        <Target className="h-6 w-6 text-indigo-600" />
+                      </div>
+                      <div>
+                        <h4 className="text-xl font-bold text-slate-900">Lộ trình tối ưu hóa chi tiết</h4>
+                        <p className="text-xs text-slate-400">Các hành động cụ thể để cải thiện thứ hạng và khả năng hiển thị AI</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    {result.recommendations.map((rec, i) => (
+                      <div key={i} className="flex flex-col md:flex-row gap-6 p-6 rounded-2xl bg-slate-50 border border-slate-100 hover:border-indigo-200 transition-all group">
+                        <div className="flex-shrink-0">
+                          <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                            rec.priority === 'High' ? 'bg-red-100 text-red-600' :
+                            rec.priority === 'Medium' ? 'bg-amber-100 text-amber-600' :
+                            'bg-blue-100 text-blue-600'
+                          }`}>
+                            <AlertTriangle className="h-3 w-3" />
+                            {rec.priority} Priority
+                          </div>
+                        </div>
+                        <div className="flex-grow space-y-2">
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] font-black text-indigo-500 bg-indigo-50 px-2 py-0.5 rounded uppercase">{rec.category}</span>
+                            <h5 className="font-bold text-slate-900">{rec.title}</h5>
+                          </div>
+                          <p className="text-sm text-slate-600 leading-relaxed">{rec.description}</p>
+                          <div className="flex items-center gap-2 pt-2">
+                            <Lightbulb className="h-4 w-4 text-amber-500" />
+                            <span className="text-xs font-bold text-slate-700">Tác động kỳ vọng: </span>
+                            <span className="text-xs text-slate-600">{rec.impact}</span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
 
@@ -469,6 +553,23 @@ export default function Home() {
                       ))}
                     </ul>
                   </div>
+
+                  <div className="mt-8 pt-8 border-t border-white/10">
+                    <h5 className="font-bold mb-4 flex items-center gap-2">
+                      <Fingerprint className="h-4 w-4 text-indigo-300" /> Thực thể (Entities) AI nhận diện:
+                    </h5>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      {result.aiOptimization.entities.map((entity, i) => (
+                        <div key={i} className="bg-white/5 p-3 rounded-xl border border-white/10 text-center">
+                          <div className="text-[10px] font-bold text-indigo-300 uppercase mb-1">{entity.type}</div>
+                          <div className="text-xs font-bold truncate">{entity.name}</div>
+                          <div className="mt-2 h-1 w-full bg-white/10 rounded-full overflow-hidden">
+                            <div className="h-full bg-indigo-400" style={{ width: `${entity.relevance}%` }} />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 </div>
 
                 <div className="rounded-3xl bg-white p-8 shadow-xl ring-1 ring-slate-100">
@@ -537,6 +638,85 @@ export default function Home() {
                       </div>
                     </motion.div>
                   ))}
+                </div>
+
+                <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                  {/* E-E-A-T Analysis Section */}
+                  <div className="rounded-3xl bg-white p-8 shadow-xl ring-1 ring-slate-100">
+                    <div className="flex items-center justify-between mb-6">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 rounded-xl bg-amber-50">
+                          <Award className="h-6 w-6 text-amber-600" />
+                        </div>
+                        <div>
+                          <h4 className="text-lg font-bold text-slate-900">Phân tích E-E-A-T</h4>
+                          <p className="text-[10px] text-slate-400">Độ tin cậy & Chuyên gia</p>
+                        </div>
+                      </div>
+                      <div className={`text-2xl font-black ${getScoreColor(result.eeat.overallScore)}`}>
+                        {result.eeat.overallScore}%
+                      </div>
+                    </div>
+                    <div className="space-y-4">
+                      {[
+                        { label: "Experience", score: result.eeat.experience, icon: HeartPulse },
+                        { label: "Expertise", score: result.eeat.expertise, icon: BrainCircuit },
+                        { label: "Authoritativeness", score: result.eeat.authoritativeness, icon: Shield },
+                        { label: "Trustworthiness", score: result.eeat.trustworthiness, icon: UserCheck },
+                      ].map((item) => (
+                        <div key={item.label} className="space-y-1">
+                          <div className="flex justify-between text-xs font-bold text-slate-600">
+                            <div className="flex items-center gap-2">
+                              <item.icon className="h-3 w-3 text-slate-400" />
+                              <span>{item.label}</span>
+                            </div>
+                            <span>{item.score}%</span>
+                          </div>
+                          <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+                            <div 
+                              className={`h-full transition-all duration-1000 ${getScoreBg(item.score)}`} 
+                              style={{ width: `${item.score}%` }} 
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Voice Search Optimization Section */}
+                  <div className="rounded-3xl bg-white p-8 shadow-xl ring-1 ring-slate-100">
+                    <div className="flex items-center justify-between mb-6">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 rounded-xl bg-blue-50">
+                          <Mic className="h-6 w-6 text-blue-600" />
+                        </div>
+                        <div>
+                          <h4 className="text-lg font-bold text-slate-900">Voice Search</h4>
+                          <p className="text-[10px] text-slate-400">Tối ưu tìm kiếm giọng nói</p>
+                        </div>
+                      </div>
+                      <div className={`text-2xl font-black ${getScoreColor(result.voiceSearch.score)}`}>
+                        {result.voiceSearch.score}%
+                      </div>
+                    </div>
+                    <div className="space-y-4">
+                      <div className="p-3 rounded-xl bg-slate-50 border border-slate-100">
+                        <div className="text-[10px] font-bold text-slate-400 uppercase mb-1">Độ đọc hiểu (Readability)</div>
+                        <div className="text-sm font-bold text-slate-800">{result.voiceSearch.readabilityLevel}</div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="p-3 rounded-xl bg-slate-50 border border-slate-100">
+                          <div className="text-[10px] font-bold text-slate-400 uppercase mb-1">Câu hỏi (FAQ)</div>
+                          <div className="text-sm font-bold text-slate-800">{result.voiceSearch.questionCoverage}%</div>
+                        </div>
+                        <div className="p-3 rounded-xl bg-slate-50 border border-slate-100">
+                          <div className="text-[10px] font-bold text-slate-400 uppercase mb-1">Đàm thoại</div>
+                          <div className="text-sm font-bold text-slate-800">{result.voiceSearch.conversationalTone}%</div>
+                        </div>
+                      </div>
+                      <p className="text-[10px] text-slate-500 italic">Dựa trên phân tích ngôn ngữ tự nhiên (NLP) cho trợ lý ảo.</p>
+                    </div>
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
