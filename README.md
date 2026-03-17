@@ -35,3 +35,4 @@ Công cụ phân tích hiệu quả SEO và tối ưu hóa AI cho website của 
 
 ---
 Phát triển bởi Trae AI Assistant.
+# SEO-checker-PHL
