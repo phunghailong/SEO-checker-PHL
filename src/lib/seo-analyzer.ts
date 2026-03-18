@@ -77,12 +77,29 @@ export interface SEOResult {
   eeat: EEATMetric;
   voiceSearch: VoiceSearchMetric;
   recommendations: OptimizationRecommendation[];
+  _meta?: {
+    cached: boolean;
+    timestamp: number;
+    ip: string;
+  };
 }
 
 const getHash = (str: string) => str.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
 
+/**
+ * Senior Cost-Optimization Engineer's Note:
+ * This analyzer is designed to minimize infrastructure costs by:
+ * 1. Using deterministic simulation for core metrics (can be replaced with Google PageSpeed Insights API - Free Tier).
+ * 2. Offloading heavy UI rendering (PDF/Charts) to the client-side.
+ * 3. Structured to be called from a server-side API Route with Caching and Rate Limiting.
+ */
 export const analyzeSEO = async (url: string, competitorUrls: string[] = []): Promise<SEOResult> => {
-  await new Promise((resolve) => setTimeout(resolve, 2500));
+  // Simulate network latency (In production, replace this with a real fetch to Google PageSpeed Insights)
+  // const psiUrl = `https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url=${url}&category=performance&category=seo&category=accessibility&category=best-practices`;
+  // const response = await fetch(psiUrl);
+  // const data = await response.json();
+  
+  await new Promise((resolve) => setTimeout(resolve, 1500));
   const hash = getHash(url);
   
   const score = 60 + (hash % 35);

@@ -17,6 +17,7 @@ export default function Home() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [result, setResult] = useState<SEOResult | null>(null);
   const [isDownloading, setIsDownloading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const reportRef = useRef<HTMLDivElement>(null);
 
   const handleAddCompetitor = () => {
@@ -42,11 +43,25 @@ export default function Home() {
     
     setIsAnalyzing(true);
     setResult(null);
+    setError(null);
+
     try {
-      const data = await analyzeSEO(url, competitors);
+      const response = await fetch("/api/analyze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url, competitors: competitors.filter(c => c.trim() !== "") }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Phân tích thất bại");
+      }
+
       setResult(data);
-    } catch (error) {
-      console.error("Analysis failed", error);
+    } catch (err: any) {
+      console.error("Analysis failed", err);
+      setError(err.message);
     } finally {
       setIsAnalyzing(false);
     }
@@ -270,6 +285,17 @@ export default function Home() {
                   )}
                 </button>
               </div>
+
+              {error && (
+                <motion.div 
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="mt-4 p-4 rounded-xl bg-red-50 border border-red-100 flex items-center gap-3 text-red-600 text-sm font-medium"
+                >
+                  <XCircle className="h-5 w-5 flex-shrink-0" />
+                  {error}
+                </motion.div>
+              )}
             </motion.form>
           </div>
         </section>
@@ -330,6 +356,11 @@ export default function Home() {
                   <p className="text-sm font-bold text-slate-900">Báo cáo phân tích Website</p>
                   <p className="text-xs text-slate-500">{url}</p>
                   <p className="text-[10px] text-slate-400 mt-1">Ngày xuất: {new Date().toLocaleDateString('vi-VN')}</p>
+                  {result._meta?.cached && (
+                    <span className="inline-block mt-1 px-2 py-0.5 rounded-full bg-green-100 text-green-600 text-[9px] font-bold uppercase tracking-widest">
+                      Đã lấy từ Cache
+                    </span>
+                  )}
                 </div>
               </div>
 
