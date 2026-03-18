@@ -47,6 +47,19 @@ export interface OptimizationRecommendation {
   impact: string;
 }
 
+export interface AISuggestion {
+  title: string;
+  metaDescription: string;
+  focus: string;
+}
+
+export interface LocalSEOMetric {
+  isGMBActive: boolean;
+  localRanking: number;
+  nearbyCompetitors: number;
+  localKeywords: string[];
+}
+
 export interface SEOResult {
   score: number;
   metrics: {
@@ -77,6 +90,8 @@ export interface SEOResult {
   eeat: EEATMetric;
   voiceSearch: VoiceSearchMetric;
   recommendations: OptimizationRecommendation[];
+  aiSuggestions: AISuggestion[];
+  localSEO: LocalSEOMetric;
   _meta?: {
     cached: boolean;
     timestamp: number;
@@ -279,6 +294,31 @@ export const analyzeSEO = async (url: string, competitorUrls: string[] = []): Pr
     .filter((_, i) => (hash + i) % 2 === 0)
     .slice(0, 4);
 
+  const aiSuggestions: AISuggestion[] = [
+    {
+      title: `[Tối ưu CTR] ${url.split('.')[0].toUpperCase()} - Giải pháp SEO & GEO Toàn diện 2026`,
+      metaDescription: `Khám phá cách ${url} dẫn đầu thị trường với công nghệ GEO. Phân tích đối thủ, tối ưu E-E-A-T và tăng 200% khả năng hiển thị AI ngay hôm nay!`,
+      focus: "Tăng tỷ lệ nhấp chuột (CTR) từ Google & Bing"
+    },
+    {
+      title: `${url.split('.')[0].toUpperCase()}: Chuyên gia SEO & GEO số 1 Việt Nam`,
+      metaDescription: `Dịch vụ SEO chuyên sâu cho doanh nghiệp. ${url} giúp bạn thống trị kết quả tìm kiếm truyền thống và Generative AI với lộ trình chi tiết.`,
+      focus: "Xây dựng thương hiệu & Thẩm quyền (Authority)"
+    },
+    {
+      title: "Tại sao chọn chúng tôi? - Phân tích SEO & GEO Pro by PHL",
+      metaDescription: `Báo cáo SEO chi tiết từ ${url}. Tối ưu hóa tìm kiếm giọng nói, thực thể AI và cấu trúc dữ liệu bền vững cho tương lai.`,
+      focus: "Tối ưu hóa cho AI Search (ChatGPT, Gemini, Perplexity)"
+    }
+  ];
+
+  const localSEO: LocalSEOMetric = {
+    isGMBActive: hash % 2 === 0,
+    localRanking: (hash % 10) + 1,
+    nearbyCompetitors: (hash % 5) + 2,
+    localKeywords: ["seo tại hà nội", "dịch vụ geo giá rẻ", "tư vấn marketing địa phương"].slice(0, (hash % 3) + 1)
+  };
+
   return {
     score,
     metrics,
@@ -303,6 +343,8 @@ export const analyzeSEO = async (url: string, competitorUrls: string[] = []): Pr
     },
     eeat,
     voiceSearch,
-    recommendations
+    recommendations,
+    aiSuggestions,
+    localSEO
   };
 };

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { Search, Globe, Shield, Zap, BarChart3, TrendingUp, CheckCircle2, XCircle, ChevronLeft, LayoutDashboard, Share2, Download, Bot, BrainCircuit, MessageSquareText, FileJson, Info, ExternalLink, Plus, Trash2, Calendar, Users, MousePointer2, Key, FileSpreadsheet, Fingerprint, Award, Mic, HeartPulse, UserCheck, AlertTriangle, Lightbulb, Target } from "lucide-react";
+import { Search, Globe, Shield, Zap, BarChart3, TrendingUp, CheckCircle2, XCircle, ChevronLeft, LayoutDashboard, Share2, Download, Bot, BrainCircuit, MessageSquareText, FileJson, Info, ExternalLink, Plus, Trash2, Calendar, Users, MousePointer2, Key, FileSpreadsheet, Fingerprint, Award, Mic, HeartPulse, UserCheck, AlertTriangle, Lightbulb, Target, Sparkles, MapPin, History, Copy } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Radar, RadarChart, PolarGrid, PolarAngleAxis, ResponsiveContainer,
@@ -18,6 +18,14 @@ export default function Home() {
   const [result, setResult] = useState<SEOResult | null>(null);
   const [isDownloading, setIsDownloading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showLeadModal, setShowLeadModal] = useState(false);
+  const [leadEmail, setLeadEmail] = useState("");
+  const [isSubmittingLead, setIsSubmittingLead] = useState(false);
+  const [leadSubmitted, setLeadSubmitted] = useState(false);
+  const [history, setHistory] = useState<{url: string, score: number, date: string}[]>([
+    { url: "example.com", score: 85, date: "18/03/2026" },
+    { url: "my-shop.vn", score: 72, date: "17/03/2026" }
+  ]);
   const reportRef = useRef<HTMLDivElement>(null);
 
   const handleAddCompetitor = () => {
@@ -59,6 +67,12 @@ export default function Home() {
       }
 
       setResult(data);
+      setHistory(prev => [{ url, score: data.score, date: new Date().toLocaleDateString('vi-VN') }, ...prev].slice(0, 6));
+      
+      // Hiển thị modal thu thập Lead sau khi có kết quả
+      if (!leadSubmitted) {
+        setShowLeadModal(true);
+      }
     } catch (err: any) {
       console.error("Analysis failed", err);
       setError(err.message);
@@ -160,8 +174,140 @@ export default function Home() {
     return "border-red-500";
   };
 
+  const handleSubmitLead = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!leadEmail || !result) return;
+
+    setIsSubmittingLead(true);
+    try {
+      const response = await fetch("/api/leads", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: leadEmail,
+          url: url,
+          score: result.score
+        }),
+      });
+
+      if (response.ok) {
+        setLeadSubmitted(true);
+        setTimeout(() => setShowLeadModal(false), 3000);
+      }
+    } catch (error) {
+      console.error("Lead submission failed", error);
+      // Vẫn đóng modal để không làm phiền người dùng
+      setShowLeadModal(false);
+    } finally {
+      setIsSubmittingLead(false);
+    }
+  };
+
   return (
     <main className="min-h-screen bg-slate-50 pb-20">
+      {/* Lead Capture Modal */}
+      <AnimatePresence>
+        {showLeadModal && result && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="relative w-full max-w-lg overflow-hidden rounded-3xl bg-white shadow-2xl"
+            >
+              {/* Close Button */}
+              <button 
+                onClick={() => setShowLeadModal(false)}
+                className="absolute top-4 right-4 p-2 text-slate-400 hover:text-slate-600 transition-colors"
+              >
+                <XCircle className="h-6 w-6" />
+              </button>
+
+              <div className="p-8 sm:p-10">
+                {!leadSubmitted ? (
+                  <>
+                    <div className="mb-6 flex justify-center">
+                      <div className="rounded-2xl bg-indigo-50 p-4 ring-1 ring-indigo-100">
+                        <Sparkles className="h-10 w-10 text-indigo-600" />
+                      </div>
+                    </div>
+                    
+                    <h2 className="text-center text-2xl font-black text-slate-900 sm:text-3xl leading-tight">
+                      Nhận Báo Cáo <br />
+                      <span className="text-indigo-600">Lộ Trình SEO Chi Tiết</span>
+                    </h2>
+                    
+                    <p className="mt-4 text-center text-slate-600">
+                      Chúc mừng! Website của bạn đạt <span className={`font-bold ${getScoreColor(result.score)}`}>{result.score}/100</span> điểm. 
+                      Chúng tôi đã chuẩn bị lộ trình tối ưu hoá riêng cho bạn.
+                    </p>
+
+                    <form onSubmit={handleSubmitLead} className="mt-8 space-y-4">
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Địa chỉ Email nhận báo cáo</label>
+                        <input
+                          type="email"
+                          required
+                          value={leadEmail}
+                          onChange={(e) => setLeadEmail(e.target.value)}
+                          placeholder="your-email@example.com"
+                          className="block w-full rounded-xl border-0 py-4 px-4 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-200 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600"
+                        />
+                      </div>
+                      
+                      <button
+                        type="submit"
+                        disabled={isSubmittingLead}
+                        className="flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 py-4 text-lg font-bold text-white shadow-lg shadow-indigo-200 hover:bg-indigo-500 transition-all active:scale-95 disabled:opacity-70"
+                      >
+                        {isSubmittingLead ? (
+                          <>
+                            <div className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                            Đang xử lý...
+                          </>
+                        ) : (
+                          <>
+                            Gửi báo cáo cho tôi
+                            <ChevronLeft className="h-5 w-5 rotate-180" />
+                          </>
+                        )}
+                      </button>
+                      
+                      <p className="text-center text-[10px] text-slate-400">
+                        * Chúng tôi cam kết bảo mật thông tin và không spam.
+                      </p>
+                    </form>
+                  </>
+                ) : (
+                  <motion.div 
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="py-10 text-center"
+                  >
+                    <div className="mb-6 flex justify-center">
+                      <div className="rounded-full bg-green-50 p-6">
+                        <CheckCircle2 className="h-16 w-16 text-green-500" />
+                      </div>
+                    </div>
+                    <h2 className="text-2xl font-black text-slate-900">Tuyệt vời!</h2>
+                    <p className="mt-4 text-slate-600">
+                      Báo cáo đã được gửi tới email của bạn! <br />
+                      Vui lòng kiểm tra hộp thư đến (hoặc spam) trong giây lát.
+                    </p>
+                    <button 
+                      onClick={() => setShowLeadModal(false)}
+                      className="mt-8 text-sm font-bold text-indigo-600 hover:underline"
+                    >
+                      Tiếp tục xem kết quả trên màn hình
+                    </button>
+                  </motion.div>
+                )}
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
       {/* Header */}
       <nav className="sticky top-0 z-50 border-b border-slate-200 bg-white/80 backdrop-blur-md">
         <div className="container mx-auto flex h-16 items-center justify-between px-4">
@@ -297,6 +443,30 @@ export default function Home() {
                 </motion.div>
               )}
             </motion.form>
+
+            {/* History Section (Simulating Data Model) */}
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.4 }}
+              className="mt-20 max-w-4xl mx-auto"
+            >
+              <div className="flex items-center gap-2 mb-6 px-4">
+                <History className="h-5 w-5 text-slate-400" />
+                <h3 className="text-sm font-bold text-slate-500 uppercase tracking-widest">Lịch sử kiểm tra gần đây</h3>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 px-4">
+                {history.map((item, i) => (
+                  <div key={i} className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex items-center justify-between hover:shadow-md transition-shadow cursor-pointer group">
+                    <div className="flex flex-col gap-1 min-w-0">
+                      <span className="text-sm font-bold text-slate-800 truncate">{item.url}</span>
+                      <span className="text-[10px] text-slate-400">{item.date}</span>
+                    </div>
+                    <div className={`text-lg font-black ${getScoreColor(item.score)}`}>{item.score}</div>
+                  </div>
+                ))}
+              </div>
+            </motion.div>
           </div>
         </section>
       )}
@@ -497,6 +667,34 @@ export default function Home() {
                   </div>
                 </div>
 
+                <div className="rounded-3xl bg-white p-8 shadow-xl ring-1 ring-slate-100">
+                  <h4 className="text-lg font-bold mb-6 flex items-center gap-2 text-slate-900">
+                    <MapPin className="h-5 w-5 text-indigo-500" /> Local SEO Presence
+                  </h4>
+                  <div className="space-y-6">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium text-slate-600">Google Maps (GMB)</span>
+                      {result.localSEO.isGMBActive ? (
+                        <span className="text-xs font-bold text-green-600 bg-green-50 px-2 py-1 rounded-lg">Đang hoạt động</span>
+                      ) : (
+                        <span className="text-xs font-bold text-red-600 bg-red-50 px-2 py-1 rounded-lg">Chưa kích hoạt</span>
+                      )}
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium text-slate-600">Xếp hạng địa phương</span>
+                      <span className="text-sm font-bold text-indigo-600">Top {result.localSEO.localRanking}</span>
+                    </div>
+                    <div className="pt-4 border-t border-slate-100">
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-3">Từ khóa địa phương rank tốt</p>
+                      <div className="flex flex-wrap gap-2">
+                        {result.localSEO.localKeywords.map((kw, i) => (
+                          <span key={i} className="text-[10px] font-bold text-slate-600 bg-slate-100 px-2 py-1 rounded-md">{kw}</span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
                 <div className="rounded-3xl bg-slate-900 p-8 shadow-xl text-white">
                   <h4 className="text-lg font-bold mb-6 flex items-center gap-2 text-indigo-400">
                     <Shield className="h-5 w-5" /> Nguồn tiêu chí đánh giá
@@ -523,6 +721,53 @@ export default function Home() {
 
               {/* Right Column: Detailed Metrics */}
               <div className="lg:col-span-8 space-y-8">
+                {/* AI Suggestions Section (Wow Factor #1) */}
+                <motion.div 
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="rounded-3xl bg-gradient-to-br from-fuchsia-600 to-pink-700 p-8 shadow-xl text-white relative overflow-hidden"
+                >
+                  <div className="absolute top-0 right-0 p-4 opacity-10">
+                    <Sparkles className="h-32 w-32" />
+                  </div>
+                  <div className="relative z-10">
+                    <div className="flex items-center gap-3 mb-6">
+                      <div className="p-3 rounded-2xl bg-white/20 backdrop-blur-md">
+                        <Sparkles className="h-7 w-7 text-pink-200" />
+                      </div>
+                      <div>
+                        <h4 className="text-2xl font-bold">AI Content Magic</h4>
+                        <p className="text-pink-100 text-sm">Đề xuất tối ưu tự động từ AI (Gemini/Claude)</p>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-6">
+                      {result.aiSuggestions.map((suggestion, i) => (
+                        <div key={i} className="bg-white/10 rounded-2xl p-6 backdrop-blur-md border border-white/20 hover:bg-white/15 transition-all group">
+                          <div className="flex items-center justify-between mb-4">
+                            <span className="px-3 py-1 rounded-full bg-pink-500/30 text-[10px] font-bold uppercase tracking-wider border border-pink-400/30">
+                              {suggestion.focus}
+                            </span>
+                            <button className="p-2 rounded-lg hover:bg-white/10 text-white/60 hover:text-white transition-colors">
+                              <Copy className="h-4 w-4" />
+                            </button>
+                          </div>
+                          <div className="space-y-4">
+                            <div>
+                              <p className="text-[10px] font-bold text-pink-200 uppercase mb-1">Tiêu đề (Title) đề xuất:</p>
+                              <h5 className="font-bold text-lg leading-tight">{suggestion.title}</h5>
+                            </div>
+                            <div>
+                              <p className="text-[10px] font-bold text-pink-200 uppercase mb-1">Mô tả (Meta Description):</p>
+                              <p className="text-sm text-pink-50 leading-relaxed italic">"{suggestion.metaDescription}"</p>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </motion.div>
+
                 {/* AI Optimization (GEO) Section */}
                 <div className="rounded-3xl bg-gradient-to-br from-indigo-600 to-violet-700 p-8 shadow-xl text-white">
                   <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 mb-8">
